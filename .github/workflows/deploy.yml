@@ -1,0 +1,48 @@
+name: Deploy Cloud Run
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write
+
+concurrency:
+  group: cloud-run-production
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    if: ${{ vars.GCP_PROJECT_ID != '' && vars.WIF_PROVIDER != '' && vars.DEPLOY_SERVICE_ACCOUNT != '' && vars.RUN_SERVICE_ACCOUNT != '' }}
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm install --no-audit --no-fund
+      - run: npm test
+      - id: auth
+        uses: google-github-actions/auth@v3
+        with:
+          project_id: ${{ vars.GCP_PROJECT_ID }}
+          workload_identity_provider: ${{ vars.WIF_PROVIDER }}
+          service_account: ${{ vars.DEPLOY_SERVICE_ACCOUNT }}
+      - uses: google-github-actions/setup-gcloud@v3
+      - name: Deploy from source
+        env:
+          GCP_PROJECT_ID: ${{ vars.GCP_PROJECT_ID }}
+          RUN_SERVICE_ACCOUNT: ${{ vars.RUN_SERVICE_ACCOUNT }}
+        run: |
+          gcloud run deploy slack-lunch-status \
+            --source . \
+            --project "$GCP_PROJECT_ID" \
+            --region southamerica-east1 \
+            --service-account "$RUN_SERVICE_ACCOUNT" \
+            --set-secrets SLACK_USER_TOKEN=slack-user-token:latest \
+            --no-allow-unauthenticated \
+            --max-instances=1 \
+            --memory=512Mi \
+            --quiet

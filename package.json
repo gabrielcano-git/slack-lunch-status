@@ -1,0 +1,21 @@
+{
+  "name": "slack-lunch-status",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Restore your previous Slack status after lunch using Cloud Run and Cloud Scheduler",
+  "license": "MIT",
+  "engines": { "node": ">=22" },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "test": "npm run build && node --test dist/test/*.test.js",
+    "start": "node dist/src/server.js",
+    "check": "npm run test"
+  },
+  "dependencies": {
+    "@google-cloud/firestore": "^9.4.1"
+  },
+  "devDependencies": {
+    "@types/node": "^22.15.0",
+    "typescript": "~5.9.3"
+  }
+}
